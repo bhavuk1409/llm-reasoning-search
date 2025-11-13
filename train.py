@@ -259,6 +259,7 @@ class SearchAwareGRPOTrainer(GRPOTrainer):
             "completion_mask": completion_inputs["attention_mask"],
             "advantages": advantages,
             "old_per_token_logps": old_per_token_logps,
+            "num_items_in_batch": len(prompts),
         }
 
 def train(args):
