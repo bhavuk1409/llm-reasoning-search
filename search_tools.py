@@ -206,7 +206,7 @@ class GenerationManager:
         inputs = self.tokenizer(prompt, return_tensors="pt", add_special_tokens=False)
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
         
-        stopping_criteria = StopOnTokens(self.tokenizer, ["</search>"])
+        stopping_criteria = StoppingCriteriaList([StopOnTokens(self.tokenizer, ["</search>"])])
         
         with torch.no_grad():
             outputs = self.model.generate(
@@ -227,7 +227,7 @@ class GenerationManager:
         inputs = self.tokenizer(prompt, return_tensors="pt", add_special_tokens=False)
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
         
-        stopping_criteria = StopOnTokens(self.tokenizer, ["</answer>"])
+        stopping_criteria = StoppingCriteriaList([StopOnTokens(self.tokenizer, ["</answer>"])])
         
         with torch.no_grad():
             outputs = self.model.generate(
@@ -263,7 +263,7 @@ class GenerationManager:
         return results_text
 
 import torch
-from transformers import StoppingCriteria
+from transformers import StoppingCriteria, StoppingCriteriaList
 
 class StopOnTokens(StoppingCriteria):
     def __init__(self, tokenizer, stop_strings):
@@ -273,3 +273,9 @@ class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids, scores, **kwargs):
         decoded = self.tokenizer.decode(input_ids[0], skip_special_tokens=False)
         return any(stop in decoded for stop in self.stop_strings)
+    
+    def __len__(self):
+        return 1
+    
+    def __iter__(self):
+        yield self
