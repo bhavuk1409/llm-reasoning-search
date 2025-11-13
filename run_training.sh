@@ -4,7 +4,9 @@ export CUDA_VISIBLE_DEVICES=0
 
 python train.py \
   --model_name "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-  --data_path "sample_data.json" \
+  --data_source "hotpotqa" \
+  --max_samples 500 \
+  --difficulty "hard" \
   --output_dir "./r-search-model" \
   --openai_api_key "your-openai-key" \
   --exa_api_key "your-exa-key" \
@@ -19,7 +21,7 @@ python train.py \
   --use_wandb \
   --wandb_api_key "your-wandb-key" \
   --wandb_project "r-search-training" \
-  --wandb_run_name "r-search-experiment-1" \
+  --wandb_run_name "r-search-hotpotqa-500" \
   --push_to_hub \
   --hub_model_id "your-username/r-search-model" \
   --hub_token "your-hf-token" \

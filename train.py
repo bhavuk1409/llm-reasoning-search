@@ -13,6 +13,7 @@ from search_tools import (
     SearchTools, GenerationManager, check_r1, check_dag,
     ANSWER_RE, safe_chat_template
 )
+from data_loader import load_training_data
 
 from trl import GRPOConfig, GRPOTrainer
 from datasets import Dataset
@@ -122,20 +123,6 @@ Grading criteria:
         except Exception as e:
             logger.error(f"Scoring error: {e}")
             return 0.0
-
-def load_dataset_fn(file_path: str) -> List[Dict]:
-    if file_path.endswith('.jsonl'):
-        data = []
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    data.append(json.loads(line))
-    else:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            if not isinstance(data, list):
-                data = [data]
-    return data
 
 class SearchAwareGRPOTrainer(GRPOTrainer):
     def __init__(self, *args, generation_manager=None, **kwargs):
@@ -288,8 +275,14 @@ def train(args):
         logger.info("WandB initialized")
     
     logger.info("Loading dataset...")
-    dataset = load_dataset_fn(args.data_path)
-    random.shuffle(dataset)
+    dataset = load_training_data(
+        source=args.data_source,
+        file_path=args.data_path if args.data_source == "custom" else None,
+        max_samples=args.max_samples,
+        difficulty=args.difficulty,
+        split=args.data_split,
+        shuffle=True
+    )
     
     dataset_id_map = {}
     for i, item in enumerate(dataset):
@@ -476,7 +469,19 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, default="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B")
     parser.add_argument("--output_dir", type=str, default="output")
-    parser.add_argument("--data_path", type=str, required=True)
+    
+    parser.add_argument("--data_source", type=str, default="hotpotqa", 
+                        choices=["hotpotqa", "custom"],
+                        help="Data source: 'hotpotqa' or 'custom'")
+    parser.add_argument("--data_path", type=str, default=None,
+                        help="Path to custom data file (only used if data_source='custom')")
+    parser.add_argument("--max_samples", type=int, default=1000,
+                        help="Maximum number of samples to load")
+    parser.add_argument("--difficulty", type=str, default="hard",
+                        choices=["easy", "medium", "hard"],
+                        help="HotpotQA difficulty level (only for hotpotqa source)")
+    parser.add_argument("--data_split", type=str, default="train",
+                        help="Dataset split to use")
     
     parser.add_argument("--openai_api_key", type=str, required=True)
     parser.add_argument("--reward_model", type=str, default="gpt-4o-mini")
