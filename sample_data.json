@@ -1,0 +1,17 @@
+[
+  {
+    "id": "1",
+    "question": "What are the latest developments in artificial intelligence regulation in the European Union as of 2025?",
+    "answer": "The EU AI Act was officially adopted in May 2024 and came into force in stages through 2025. It introduces risk-based regulation for AI systems, banning certain high-risk applications while setting compliance requirements for others."
+  },
+  {
+    "id": "2",
+    "question": "How have global semiconductor supply chains evolved since 2024?",
+    "answer": "Major shifts include increased domestic production in the US and EU through subsidies, diversification away from single-region dependency, and new manufacturing facilities in India and Southeast Asia to reduce reliance on Taiwan and China."
+  },
+  {
+    "id": "3",
+    "question": "What is the current status of quantum computing commercialization?",
+    "answer": "As of early 2025, quantum computers remain primarily in research and specialized applications. IBM, Google, and startups are making progress on error correction and qubit stability, but practical advantages over classical computing are still limited to specific problem domains like cryptography and molecular simulation."
+  }
+]
