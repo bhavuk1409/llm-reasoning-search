@@ -1,84 +1,152 @@
-# LLM reasoning
+# Improving Multi hop reasoning using Reinforcement Learning for Multi-Source Search
 
-## Overview
-This project develops a Large Language Model (LLM) capable of multi-hop reasoning using reinforcement fine-tuning.  
-The model autonomously plans, searches, and synthesizes information from multiple sources within a single framework.
+## Features
 
----
+- Single LLM framework with structured output (think/search/result/answer)
+- GRPO-based reinforcement learning
+- Exa API integration for web search
+- WandB tracking
+- Hugging Face Hub integration
+- LoRA fine-tuning for efficiency
 
-## Objective
-To train an LLM that can:
-1. Plan how to search (queries and sources)
-2. Execute those searches
-3. Combine retrieved information into a coherent answer
+## Installation
 
----
+```bash
+pip install -r requirements.txt
+```
 
-## Model Output Format
-Each response follows a structured reasoning format:
+## Quick Start
 
-<think> Internal reasoning process </think>
+1. Prepare your data in JSON or JSONL format:
 
-<search> Multi-hop search plan (DAG) </search> <result> Retrieved information </result> <answer> Final answer </answer> ```
-Training Pipeline
-1. Data Collection
-Datasets used:
+```json
+[
+  {
+    "id": "1",
+    "question": "Your question here",
+    "answer": "Reference answer"
+  }
+]
+```
 
-FinSearchBench-24
+2. Set up API keys:
 
-SearchExpertBench-25
+   - OpenAI API key (for reward model)
+   - Exa API key (for search)
+   - WandB API key (optional, for tracking)
+   - HuggingFace token (optional, for pushing model)
 
-Each entry includes:
+3. Run training:
 
-A question
+```bash
+python train.py \
+  --model_name "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
+  --data_path "your_data.json" \
+  --output_dir "./output" \
+  --openai_api_key "YOUR_KEY" \
+  --exa_api_key "YOUR_KEY" \
+  --max_steps 100 \
+  --use_wandb \
+  --wandb_api_key "YOUR_KEY"
+```
 
-A correct answer
+## Training Arguments
 
-(Optional) reference search structure
+### Model & Data
 
-2. Candidate Generation
-A base model (Qwen-2 or Mistral) generates structured responses that include <think>, <search>, <result>, and <answer> tags.
+- `--model_name`: Base model (default: DeepSeek-R1-Distill-Qwen-7B)
+- `--data_path`: Training data file path (required)
+- `--output_dir`: Output directory (default: ./output)
 
-3. Reward Computation
-Reward Type	Description
-Answer Reward	Correctness of the final answer
-Format Reward	Structural accuracy of the response
-Search Reward	Logical and efficient DAG generation
-Efficiency Reward	Conciseness of reasoning and output
+### API Keys
 
-Reward Function:
+- `--openai_api_key`: OpenAI API key (required)
+- `--exa_api_key`: Exa API key (required)
+- `--wandb_api_key`: WandB API key (optional)
 
-ini
-Copy code
-R = w1*R_answer + w2*R_format + w3*R_search + w4*R_efficiency
-4. Reinforcement Fine-Tuning
-The model is fine-tuned using Generalized Reward Policy Optimization (GRPO), optimizing for high-reward structured reasoning.
+### Training Hyperparameters
 
-5. Evaluation
-The model is evaluated based on:
+- `--batch_size`: Per-device batch size (default: 1)
+- `--max_steps`: Maximum training steps (default: 100)
+- `--lr`: Learning rate (default: 5e-6)
+- `--num_generations`: GRPO generations per query (default: 4)
+- `--gradient_accumulation_steps`: Gradient accumulation (default: 4)
+- `--curriculum_steps`: Format-focused curriculum steps (default: 30)
 
-Final answer accuracy
+### LoRA Configuration
 
-Validity of search DAG
+- `--lora_r`: LoRA rank (default: 16)
+- `--lora_alpha`: LoRA alpha (default: 32)
+- `--lora_dropout`: LoRA dropout (default: 0.05)
+- `--lora_target_modules`: Target modules (default: q_proj, k_proj, v_proj, o_proj)
 
-Token efficiency
+### WandB Tracking
 
-Latency
+- `--use_wandb`: Enable WandB tracking
+- `--wandb_project`: WandB project name (default: r-search-training)
+- `--wandb_run_name`: WandB run name (optional)
 
-Results
-Dataset	Baseline	Proposed (R-Search)	Improvement
-FinSearchBench-24	64.1%	79.2%	+15.1%
-SearchExpertBench-25	58.4%	75.3%	+16.9%
+### Hugging Face Hub
 
-Metric	Multi-Agent	R-Search	Improvement
-Tokens Used	8.2k	2.4k	~70% fewer
-Latency	13.2s	6.7s	~50% faster
+- `--push_to_hub`: Push model to HF Hub
+- `--hub_model_id`: HF model ID (e.g., username/model-name)
+- `--hub_token`: HF access token
+- `--hub_private`: Make repository private
 
-References
-Yao, S. et al. ReAct: Synergizing Reasoning and Acting in Language Models. arXiv:2210.03629 (2022)
+## Output Format
 
-Schick, T. et al. Toolformer: Language Models Can Teach Themselves to Use Tools. arXiv:2302.04761 (2023)
+The model generates structured outputs:
 
-Shao, Z. et al. VinePPO: Unlocking RL Potential for LLM Reasoning through Refined Credit Assignment. arXiv:2410.01679 (2024)
+```
+<think>
+[Reasoning about the query and search strategy]
+</think>
 
-Li, Y. et al. Reasoning with Retrieval: Augmenting Large Language Models with Information Search. arXiv:2403.10129 (2024)
+<search>
+Nodes:
+A: query text (General)
+B: another query (News)
+Edges:
+A -> B
+</search>
+
+<r>
+[Auto-filled search results]
+</r>
+
+<answer>
+[Final synthesized answer]
+</answer>
+```
+
+## Reward Function
+
+The training uses a composite reward:
+
+- 50% semantic accuracy (via GPT-4o-mini judge)
+- 25% DAG validity (structural correctness)
+- 25% format compliance (all tags present)
+
+During the first `curriculum_steps`, weights shift to 20%/40%/40% to encourage format learning.
+
+## Example Usage
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained("your-model-path")
+tokenizer = AutoTokenizer.from_pretrained("your-model-path")
+
+prompt = "What are recent developments in quantum computing?"
+messages = [
+    {"role": "system", "content": SYSTEM_PROMPT},
+    {"role": "user", "content": prompt}
+]
+
+text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+inputs = tokenizer(text, return_tensors="pt").to(model.device)
+
+outputs = model.generate(**inputs, max_new_tokens=1024)
+response = tokenizer.decode(outputs[0], skip_special_tokens=False)
+print(response)
+```
