@@ -1,4 +1,4 @@
-## Multi-Hop Reasoning Project
+# Multi-Hop Reasoning Project
 
 ## Overview
 This project develops a Large Language Model (LLM) capable of multi-hop reasoning using reinforcement fine-tuning.  
