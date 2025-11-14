@@ -9,3 +9,4 @@ exa-py
 openai
 wandb
 huggingface_hub
+hf_transfer
